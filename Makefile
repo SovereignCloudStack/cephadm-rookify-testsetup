@@ -19,13 +19,21 @@ help: ## Display this help message
 	@cat $(MAKEFILE_LIST) | grep '^[a-zA-Z]'  | \
 	    awk -F ':.*?## ' 'NF==2 {printf "  %-26s%s\n\n", $$1, "${COLOUR_GREEN}"$$2"${COLOUR_END}"}'a
 
-.PHONY: install-cephadm
-install-cephadm: ## Run cephadm installation playbook only
-	ansible-playbook provisioning/plays/install_cephadm.yaml -i ./.vagrant/provisioners/ansible/inventory/vagrant_ansible_inventory
+.PHONY: setup
+setup: ## Setup the VMs and Install Ceph and Rook using `vagrant up`
+	vagrant up
+	
+.PHONY: stop
+setup: ## Stop (halt) the setup using `vagrant halt`
+	vagrant halt
 
-.PHONY: test-ansible-debug
-test-ansible-debug: ## Run ansible directly without vagrant to test
-	ansible-playbook provisioning/test/debug.yaml -i ./.vagrant/provisioners/ansible/inventory/vagrant_ansible_inventory
+.PHONY: destroy
+destroy: ## Destroy the setup using `vagrant destroy`: this will remove all VMs and their disks without question (force)
+	vagrant destroy -f
+
+.PHONY: rebuild
+rebuild: ## destroy vagrant setup and recreate it
+	vagrant destroy -f && vagrant up
 
 .PHONY: get-rookify
 get-rookify: ## install rookify as a git submodule
@@ -40,20 +48,7 @@ get-configs: ## Get configs of vms for rookify
 	vagrant ssh cephadm_master -c "sudo cp -r /etc/ceph /tmp/ceph && sudo chown -R vagrant:vagrant /tmp/ceph"
 	scp -F ssh_config.conf -r cephadm_master:/tmp/ceph rookify/.ceph
 
-.PHONY: increase-disk-space
-increase-disk-space: ## TODO: script to increase diskspace on host
-# see here: https://www.rodolfocarvalho.net/blog/resize-disk-vagrant-libvirt/
-	vagrant halt
-	qemu-img resize ~/path/to/image +10G
-	vagrant up && vagrant ssh bash -c 'echo ", +" | sudo sfdisk -N 1 /dev/vda --no-reread'
-	vagrant ssh bash -c 'sudo partprobe'
-	vagrant ssh bash -c 'sudo resize2fs /dev/vda1'
-
 .PHONY: login-master
 login-master: ## login to master per ssh
 	vagrant ssh cephadm_master
 
-
-.PHONY: rebuild
-rebuild: ## destroy vagrant setup and recreate it
-	vagrant destroy -f && vagrant up
