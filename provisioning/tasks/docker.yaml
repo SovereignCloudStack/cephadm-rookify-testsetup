@@ -1,0 +1,32 @@
+---
+- name: Add docker dependencies for repo setup
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - curl
+- name: Add docker GPG keys
+  ansible.builtin.apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+- name: Add Docker Repository
+  ansible.builtin.apt_repository:
+    repo: deb https://download.docker.com/linux/ubuntu jammy stable
+    state: present
+- name: Install Docker and dependencies
+  ansible.builtin.apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
+    force_apt_get: true
+    update_cache: true
+# - name: Create and start containers with Docker Compose v2
+#   community.docker.docker_compose_v2:
+#     project_src: "/home/vagrant/directory"
+#   register: output
+# - name: Show results
+#   ansible.builtin.debug:
+#     var: output

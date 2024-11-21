@@ -1,0 +1,11 @@
+---
+- name: Playbook to install Rook
+  hosts: master
+  become: true
+  tags: rook
+  vars_files:
+    - ../vars.yaml
+  tasks:
+    - name: Setup Rook using Helm
+      ansible.builtin.include_tasks:
+        file: ../tasks/setup_rook_operator.yaml

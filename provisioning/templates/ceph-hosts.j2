@@ -1,0 +1,148 @@
+---
+service_type: host
+hostname: master
+addr: {{ master_ip }}
+labels:
+  - _admin
+  - grafana
+---
+service_type: host
+hostname: worker1
+addr: {{ worker1_ip }}
+labels:
+  - mon
+  - mgr
+  - mds
+  - osd
+  - alertmanager
+  - rgw
+---
+service_type: host
+hostname: worker2
+addr: {{ worker2_ip }}
+labels:
+  - mon
+  - mgr
+  - mds
+  - osd
+  - prometheus
+  - rgw
+---
+service_type: host
+hostname: worker3
+addr: {{ worker3_ip }}
+labels:
+  - mon
+  - mgr
+  - mds
+  - osd
+  - rgw
+---
+service_type: alertmanager
+service_name: alertmanager
+placement:
+  count: 1
+  hosts: 
+    - 'worker1'
+---
+service_type: prometheus
+service_name: prometheus
+placement:
+  count: 1
+  hosts: 
+    - 'worker2'
+---
+service_type: mds
+service_id: mds
+service_name: mds.mds
+placement:
+  count: 2
+  label: mds
+---
+service_type: mgr
+service_name: mgr
+placement:
+  count: 2
+  hosts:
+    - worker1
+    - worker2
+    - worker3
+---
+service_type: mon
+service_name: mon
+placement:
+  count: 3
+  hosts:
+    - worker1
+    - worker2
+    - worker3
+---
+service_type: osd
+service_name: osd
+placement:
+  count: 3
+  hosts:
+    - worker1
+    - worker2
+    - worker3
+crush_device_class: hdd
+spec:
+  data_devices:
+    rotational: true
+    size: 10GB
+  filter_logic: AND
+  objectstore: bluestore
+{% if disk_scenario == "scenario2" %}
+  db_devices:
+    rotational: true
+    size: 9GB
+{% elif disk_scenario == "scenario3" %}
+  db_devices:
+    rotational: true
+    size: 9GB
+  wal_devices:
+    rotational: true
+    size: 8GB
+{% endif %}
+
+---
+service_type: node-exporter
+service_name: node-exporter
+placement:
+  host_pattern: 'worker*'
+---
+service_type: crash
+service_name: crash
+placement:
+  host_pattern: 'worker*'
+---
+service_type: rgw
+service_id: testing-eu-east
+service_name: rgw.testing-eu-east
+placement:
+  count: 3
+  host_pattern: 'worker*'
+spec:
+  rgw_zonegroup: eu
+  rgw_zone: eu-east
+  rgw_realm: eu-east
+  rgw_frontend_type: "beast"
+  rgw_frontend_port: 8080
+
+# NOTE: rgw object might be created, good, but the config is set elsewhere, which means: the default will not be changed for the zones.
+# So current solution: change default afterwards, like this, manually:
+#  sudo radosgw-admin realm create --rgw-realm=eu-east --default
+#  sudo radosgw-admin zonegroup create --rgw-zonegroup=eu --rgw-realm=eu-east --master --default
+#  sudo radosgw-admin zone create --rgw-zonegroup=eu --rgw-zone=eu-east --master --default
+#  sudo radosgw-admin zonegroup remove --rgw-zonegroup=default --rgw-zone=default
+#  sudo radosgw-admin period update --commit
+#
+# you might want to delete the default entirely as well
+# sudo radosgw-admin zone delete --rgw-zone=default
+# sudo radosgw-admin period update --commit
+# sudo radosgw-admin zonegroup delete --rgw-zonegroup=default
+# sudo radosgw-admin period update --commit
+#
+# Then redeploy all rgws! (in the gui for example)
+
+

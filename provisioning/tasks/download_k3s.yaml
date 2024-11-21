@@ -1,0 +1,8 @@
+---
+- name: Download K3s-Installer
+  ansible.builtin.get_url:
+    url: "https://get.k3s.io"
+    dest: "/root/k3s_installer.sh"
+    owner: root
+    group: root
+    mode: '0700'

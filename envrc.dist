@@ -1,0 +1,5 @@
+# Unset ssh auth socket to prevent ssh agents to mess with this setup
+unset $SSH_AUTH_SOCK
+
+# Set needed "test scenario" here, or set the environment variable yourself
+export DISK_SCENARIO="scenario1"

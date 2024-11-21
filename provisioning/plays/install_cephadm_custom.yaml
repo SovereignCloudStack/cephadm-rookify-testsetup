@@ -1,0 +1,39 @@
+---
+- name: Playbook to install Cephadm on masternode
+  hosts: master
+  become: true
+  tags: install
+  vars_files:
+    - ../vars.yaml
+  tasks:
+    - name: Check if Cephadm is already installed
+      ansible.builtin.stat:
+        path: "/root/cephadm"
+      register: cephadm_installed
+
+    - name: Download Cephadm Installer
+      ansible.builtin.get_url:
+        url: "https://download.ceph.com/rpm-{{ ceph_release }}/el9/noarch/cephadm"
+        dest: "/root/cephadm"
+        owner: root
+        group: root
+        mode: '0700'
+      when: not cephadm_installed.stat.exists
+
+    - name: Add Reef Ceph Release Repo
+      ansible.builtin.command:
+        argv:
+          - /root/cephadm
+          - add-repo
+          - --release
+          - reef
+      when: not cephadm_installed.stat.exists
+
+    - name: Add Reef Ceph Release Repo
+      ansible.builtin.command: /root/cephadm install
+      when: not cephadm_installed.stat.exists
+      register: myoutput
+
+    - name: Output cephadm installation Output
+      ansible.builtin.debug:
+        msg: "{{ myoutput }}"

@@ -1,0 +1,83 @@
+---
+- name: Setup Ceph
+  hosts: master
+  become: true
+  become_user: root
+  gather_facts: true
+  tags: install
+  vars:
+    master_ip: "{{ hostvars['cephadm_master']['ansible_host'] }}"
+    worker1_ip: "{{ hostvars['cephadm_worker1']['ansible_host'] }}"
+    worker2_ip: "{{ hostvars['cephadm_worker2']['ansible_host'] }}"
+    worker3_ip: "{{ hostvars['cephadm_worker3']['ansible_host'] }}"
+  vars_files:
+    - ../vars.yaml
+  tasks:
+    - name: Set environment variables for templating
+      ansible.builtin.set_fact:
+        disk_scenario: "{{ lookup('env', 'DISK_SCENARIO') | default('scenario1') }}"
+
+    - name: Check if /etc/ceph/ exists
+      ansible.builtin.stat:
+        path: /etc/ceph/ceph.client.admin.keyring
+      register: ceph_admin_keyring
+
+    - name: Setup ceph-common tools for master so the systemd units (targets) are available
+      ansible.builtin.command:
+        argv:
+          - "cephadm"
+          - "install"
+          - "ceph-common"
+          - "ceph-base"
+          - "ceph-mon"
+          - "ceph-mgr"
+          - "ceph-mds"
+          - "radosgw"
+
+    - name: Bootstrap the masternode to be monitor
+      ansible.builtin.command:
+        argv:
+          - "cephadm"
+          - "bootstrap"
+          - "--mon-ip"
+          - "{{ master_ip }}"
+      register: bootstrap_output
+      when: not ceph_admin_keyring.stat.exists
+
+    - name: Output cephadm bootstrap infos
+      ansible.builtin.debug:
+        msg: "{{ bootstrap_output | default('Cephadm is considered to have been boostrapped allready.')}}"
+
+    - name: Copy ceph pub key
+      ansible.builtin.slurp:
+        src: "/etc/ceph/ceph.pub"
+      register: ceph_pub
+
+    - name: Paste all ceph pub keys to authorized hosts of workers
+      ansible.posix.authorized_key:
+        user: "root"
+        key: "{{ ceph_pub['content'] | b64decode | trim }}"
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['workers'] }}"
+
+    - name: Install resources into the cephluster
+      ansible.builtin.template:
+        src: ../templates/ceph-hosts.j2
+        dest: /root/resources.yaml
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Add the resources with cephadm ceph container
+      ansible.builtin.command:
+        argv:
+          - "cephadm"
+          - "shell"
+          - "--mount"
+          - "/root/resources.yaml"
+          - "--"
+          - "ceph"
+          - "orch"
+          - "apply"
+          - "-i"
+          - "/mnt/resources.yaml"

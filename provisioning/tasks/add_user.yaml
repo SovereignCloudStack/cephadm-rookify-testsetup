@@ -1,0 +1,17 @@
+---
+- name: Add dev user
+  ansible.builtin.user:
+    name: "{{ user | default('dude') }}"
+    shell: "/bin/bash"
+    comment: "a typical working bird"
+    password: "{{ user_password }}"
+    group: "docker"
+    generate_ssh_key: true
+    ssh_key_bits: 4096
+    ssh_key_file: ".ssh/id_rsa"
+
+- name: Set authorized key for user copying it from current user
+  ansible.posix.authorized_key:
+    user: "{{ user | default('dude') }}"
+    state: present
+    key: "{{ lookup('file', lookup('env', 'HOME') + '/.ssh/id_rsa.pub') }}"

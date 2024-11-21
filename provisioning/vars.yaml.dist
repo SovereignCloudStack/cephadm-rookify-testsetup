@@ -1,0 +1,5 @@
+ssh_private_key_path: /home/user/.ssh/id_rsa # Replace with the path to your private key
+ssh_public_key_path: /home/user/.ssh/id_rsa.pub  # Replace with the path to your public key
+user_password: password # Replace with your password
+user: $USER # Replace with the user you want to add to the vms, per default 'dude' will be used
+ceph_release: 18.2.0 # Replace with required ceph release

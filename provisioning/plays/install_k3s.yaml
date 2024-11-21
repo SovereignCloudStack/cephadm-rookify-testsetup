@@ -1,0 +1,83 @@
+---
+- name: Playbook to install K3s Master and workers
+  hosts: master
+  tags: k3s
+  become: true
+  gather_facts: true
+  vars_files:
+    - ../vars.yaml
+  vars:
+    masterip: "{{ ansible_host }}"
+
+  tasks:
+    - name: Check if K3s-Installer is downloaded allready
+      ansible.builtin.stat:
+        path: "/root/k3s_installer.sh"
+      register: k3s_installer
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['all'] }}"
+      run_once: true
+
+    - name: Download K3s-Installer
+      ansible.builtin.get_url:
+        url: "https://get.k3s.io"
+        dest: "/root/k3s_installer.sh"
+        owner: root
+        group: root
+        mode: '0700'
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['all'] }}"
+      when: not (k3s_installer.results | selectattr('item', 'equalto', item) | first ).stat.exists
+
+    - name: Install k3s on Master Node first (allowing http)
+      ansible.builtin.command:
+        argv:
+          - '/root/k3s_installer.sh'
+          - '--disable'
+          - 'traefik'
+          - '--disable'
+          - 'servicelb'
+      when: not (k3s_installer.results | selectattr('item', 'equalto', 'cephadm_master') | first ).stat.exists
+      register: myoutput
+
+    - name: Output k3s installation Output
+      ansible.builtin.debug:
+        msg: "{{ myoutput | default('It appears that k3s has been installed allready...') }}"
+
+    - name: Copy the content Worker Token
+      ansible.builtin.slurp:
+        src: "/var/lib/rancher/k3s/server/node-token"
+      register: agent_token
+      run_once: true
+
+    - name: Create directories /etc/rancher/k3s/ 
+      ansible.builtin.file:
+        path: "/etc/rancher/k3s/"
+        state: directory
+        recurse: true
+        owner: root
+        group: root
+        mode: '0750'
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['workers'] }}"
+
+    - name: Write environment variables to /etc/rancher/k3s/config.yaml
+      ansible.builtin.template:
+        src: "../templates/k3s-agent.env.j2"
+        dest: "/etc/rancher/k3s/config.yaml"
+        owner: root
+        group: root
+        mode: '0644'
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['workers'] }}"
+      when: not (k3s_installer.results | selectattr('item', 'equalto', item) | first).stat.exists
+
+    - name: Now use Agent token to install k3s-agents on worker nodes
+      ansible.builtin.command:
+        argv:
+          - '/root/k3s_installer.sh'
+      environment:
+        INSTALL_K3S_EXEC: "agent"
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['workers'] }}"
+      when: not (k3s_installer.results | selectattr('item', 'equalto', item) | first).stat.exists

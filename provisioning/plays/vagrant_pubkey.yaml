@@ -1,0 +1,19 @@
+---
+- name: Playbook to copy master pub key to all vagrant users
+  hosts: master
+  become: true
+  tags: install
+  vars_files:
+    - ../vars.yaml
+  tasks:
+    - name: Splurp pubkey from authorized_keys of master
+      ansible.builtin.slurp:
+        path: "/home/vagrant/.ssh/authorized_keys"
+      register: pubcontent
+
+    - name: Copy public key to authorized_keys of worker nodes
+      ansible.posix.authorized_key:
+        user: "vagrant"
+        key: "{{ pubcontent['content'] | b64decode | trim }}"
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['workers'] }}"

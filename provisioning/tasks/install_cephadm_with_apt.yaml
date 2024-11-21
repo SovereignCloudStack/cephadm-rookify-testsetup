@@ -1,0 +1,6 @@
+---
+- name: Install Cephadm using apt
+  ansible.builtin.apt:
+    name:
+      - cephadm
+    state: present

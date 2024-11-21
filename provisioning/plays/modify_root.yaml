@@ -1,0 +1,50 @@
+---
+- name: Playbook to install ssh keys on root only and copy pub keys to authorized_keys of workers
+  hosts: master
+  tags: keyhost
+  become: true
+  gather_facts: true
+  vars:
+    master_ip: "{{ hostvars['cephadm_master']['ansible_host'] }}"
+    worker1_ip: "{{ hostvars['cephadm_worker1']['ansible_host'] }}"
+    worker2_ip: "{{ hostvars['cephadm_worker2']['ansible_host'] }}"
+    worker3_ip: "{{ hostvars['cephadm_worker3']['ansible_host'] }}"
+  vars_files:
+    - ../vars.yaml
+  tasks:
+    - name: Generate ssh keys for root locally and distribute them to other vms
+      ansible.builtin.user:
+        name: "root"
+        group: "docker"
+        generate_ssh_key: true
+        ssh_key_bits: 4096
+        ssh_key_file: ".ssh/id_rsa"
+
+    - name: Copy the content of id_rsa.pub as b64 encoded content
+      ansible.builtin.slurp:
+        src: "/root/.ssh/id_rsa.pub"
+      register: pubkey
+
+    - name: Ensure .ssh directory exists on worker nodes
+      ansible.builtin.file:
+        path: /home/root/.ssh
+        state: directory
+        mode: '0700'
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['workers'] }}"
+
+    - name: Copy public key to authorized_keys of worker nodes
+      ansible.posix.authorized_key:
+        user: "root"
+        key: "{{ pubkey['content'] | b64decode }}"
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups['workers'] }}"
+
+    - name: Get all ips and hostnames of vms
+      ansible.builtin.template:
+        src: ../templates/hosts.j2
+        dest: /etc/hosts
+        owner: root
+        group: root
+        mode: '0644'
+        backup: true

@@ -1,0 +1,8 @@
+---
+- name: Test play
+  hosts: master
+  gather_facts: true
+  tasks:
+    - name: Get all hostvars
+      ansible.builtin.debug:
+        msg: "{{ hostvars | dict2items | selectattr('key', 'search', '^cephadm_worker') | map(attribute='value.ansible_host') | list }}"

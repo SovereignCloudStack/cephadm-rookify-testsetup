@@ -1,0 +1,56 @@
+---
+- name: Main playbook to run all
+  hosts: all
+  become: true
+  gather_facts: true
+  vars_files:
+    - vars.yaml
+
+  tasks:
+    - name: Update apt cache and upgrade all packages
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: dist
+
+    - name: Install tools and other necessary packages for all vms
+      ansible.builtin.apt:
+        name:
+          - make
+          - vim
+          - git
+          - lvm2
+        state: present
+
+    - name: Install docker and dependencies
+      ansible.builtin.include_tasks:
+        file: tasks/docker.yaml
+
+    - name: Setup users
+      ansible.builtin.include_tasks:
+        file: tasks/add_user.yaml
+
+    # Also checkout play install_cephadm_custom.yaml for custom version of cephadm
+    # The standard ceph for ubuntu 22 is ceph version 17.2.7 (quincy)
+    - name: Use apt to install cephadm
+      ansible.builtin.include_tasks:
+        file: tasks/install_cephadm_with_apt.yaml
+
+- name: Include the Root key distribution play
+  ansible.builtin.import_playbook: plays/modify_root.yaml
+
+# Currently normal apt installation is used, see task/install_cephadm_custom.yaml
+# The ceph deployed here is supposed to be reef
+# - name: Install Cephadm on master node
+#   ansible.builtin.import_playbook: plays/install_cephadm_custom.yaml
+
+- name: Install K3s on master and worker nodes
+  ansible.builtin.import_playbook: plays/install_k3s.yaml
+
+- name: Install Rook on all nodes
+  ansible.builtin.import_playbook: plays/install_rook.yaml
+
+- name: Setup Ceph from master node
+  ansible.builtin.import_playbook: plays/setup_ceph.yaml
+
+- name: Copy master vagrant pub key to user vagrant on workers
+  ansible.builtin.import_playbook: plays/vagrant_pubkey.yaml
