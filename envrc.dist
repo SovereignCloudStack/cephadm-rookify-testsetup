@@ -2,7 +2,7 @@
 unset $SSH_AUTH_SOCK
 
 # Set provider to use
-export PROVIDER="virtualbox"
+export PROVIDER="libvirt"
 
 # set usage of apt or manual installation of cephadm
 export USE_APT_FOR_CEPHADM=1
