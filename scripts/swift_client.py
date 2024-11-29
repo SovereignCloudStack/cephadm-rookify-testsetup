@@ -2,13 +2,19 @@
 
 import swiftclient
 # Important: create a user and then a subuser. The "user" is also the so called "account" for S3. The subuser is only needed for the swift api.
-user = 'swiftclientuser:swiftclientsubuser'
-key = 'hCcKU67qvmEMKLJ55Z8ZoDySWAvNrqCvF12VZ05B'
+#user =  "johndoe:swift"
+#key  =  "fMhEVTZalBq1m3vLORSWkObpeHBfcZjpBBkjDXwH"
+
+user = "johndoe:swift"
+key = "t6LyFPvWf4OAClfNpBIFLskae8fF2UD999JCZDEN"
+
+
+port = 80
 
 conn = swiftclient.Connection(
         user=user,
         key=key,
-        authurl='http://192.168.121.115:8080/auth',
+        authurl='http://192.168.121.48:80/auth',
 )
 
 # Create a container (bucket)

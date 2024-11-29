@@ -1,0 +1,9 @@
+---
+- name: Install tools and other necessary packages for all vms
+  ansible.builtin.apt:
+    name:
+      - make
+      - vim
+      - git
+      - lvm2
+    state: present

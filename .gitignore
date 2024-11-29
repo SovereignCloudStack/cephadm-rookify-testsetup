@@ -173,5 +173,4 @@ inventory.ini
 
 # Rookify submodule
 rookify
-sshconfig.conf
 ssh_config.conf

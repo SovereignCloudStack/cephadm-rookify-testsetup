@@ -1,25 +1,35 @@
 ---
 - name: Main playbook to run all
-  hosts: all
+  hosts:
+    - workers
+    - master
   become: true
   gather_facts: true
   vars_files:
     - vars.yaml
 
   tasks:
+    - name: Basic usage
+      ansible.builtin.debug:
+        msg: "'{{ lookup('ansible.builtin.env', 'USE_APT_FOR_CEPHADM') }}'"
+
+    - name: Set ceph_apt_package variable based on USE_APT_FOR_CEPHADM
+      ansible.builtin.set_fact:
+        ceph_apt_package: "{{ lookup('ansible.builtin.env', 'USE_APT_FOR_CEPHADM') | int == 1 }}"
+        cacheable: true
+
+    - name: Debug ceph_apt_package value
+      debug:
+        msg: "ceph_apt_package is set to {{ ceph_apt_package }}"
+
     - name: Update apt cache and upgrade all packages
       ansible.builtin.apt:
         update_cache: true
         upgrade: dist
 
-    - name: Install tools and other necessary packages for all vms
-      ansible.builtin.apt:
-        name:
-          - make
-          - vim
-          - git
-          - lvm2
-        state: present
+    - name: Install generally usefull packages
+      ansible.builtin.include_tasks:
+        file: tasks/general_packages.yaml
 
     - name: Install docker and dependencies
       ansible.builtin.include_tasks:
@@ -34,14 +44,16 @@
     - name: Use apt to install cephadm
       ansible.builtin.include_tasks:
         file: tasks/install_cephadm_with_apt.yaml
+      when: ceph_apt_package is true
 
 - name: Include the Root key distribution play
   ansible.builtin.import_playbook: plays/modify_root.yaml
 
 # Currently normal apt installation is used, see task/install_cephadm_custom.yaml
 # The ceph deployed here is supposed to be reef
-# - name: Install Cephadm on master node
-#   ansible.builtin.import_playbook: plays/install_cephadm_custom.yaml
+- name: Install Cephadm on master node
+  ansible.builtin.import_playbook: plays/install_cephadm_custom.yaml
+  when: ceph_apt_package is false
 
 - name: Install K3s on master and worker nodes
   ansible.builtin.import_playbook: plays/install_k3s.yaml

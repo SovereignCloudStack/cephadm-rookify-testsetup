@@ -4,7 +4,6 @@ hostname: master
 addr: {{ master_ip }}
 labels:
   - _admin
-  - grafana
 ---
 service_type: host
 hostname: worker1
@@ -122,13 +121,13 @@ service_name: rgw.testing-eu-east
 placement:
   count: 3
   host_pattern: 'worker*'
-spec:
-  rgw_zonegroup: eu
-  rgw_zone: eu-east
-  rgw_realm: eu-east
-  rgw_frontend_type: "beast"
-  rgw_frontend_port: 8080
-
+#spec:
+#  rgw_zonegroup: eu
+#  rgw_zone: eu-east
+#  rgw_realm: eu-east
+#  rgw_frontend_type: "beast"
+#  rgw_frontend_port: 8080
+#
 # NOTE: rgw object might be created, good, but the config is set elsewhere, which means: the default will not be changed for the zones.
 # So current solution: change default afterwards, like this, manually:
 #  sudo radosgw-admin realm create --rgw-realm=eu-east --default
@@ -144,5 +143,8 @@ spec:
 # sudo radosgw-admin period update --commit
 #
 # Then redeploy all rgws! (in the gui for example)
-
+# ceph orch redeploy rgw.testing-eu-east (first check with ceph orch ls for correct name of rgw resource)
+# 
+# NOTE: you dont need grafana? Me neither. This is how you delete it:
+# ceph orch rm grafana
 
