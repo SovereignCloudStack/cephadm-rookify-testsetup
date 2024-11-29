@@ -1,13 +1,13 @@
 # README
 
-This a testing setup using vagrant (with support for hypervisors Libvirt and Virtualbox) to install a small local Ceph and Rook cluster.
+This a testing setup using Vagrant (with support for hypervisors Libvirt and Virtualbox) to install a small local Ceph and Rook cluster.
 The Ceph cluster is deployed with `cephadm`, Rook is deployed with `helm` and running on `k3s`. 
 
-This setup is for testing purposes only, i.e. it is a relatively simple deployment to test `rookify` on, don't expect too much of it ;). Any wishes to expand the testsetup are welcome.
+This setup is for testing purposes only, i.e. it is a relatively simple deployment to test `rookify` on, don't expect too much of it ;=). Any wishes to expand the testsetup are welcome.
 
 ## Prerequisites
 
-- Diskspace: about 200GB (depending on which diskscenario you use, see environment variable `DISK_SCENARIO`)
+- Free disk-space: about 200GB (depending on which diskscenario you use, see environment variable `DISK_SCENARIO`)
 - RAM: about 32GB
 - Hypervisor: Libvirt or Virtualbox
 - Vagrant should be installed
@@ -30,15 +30,15 @@ The decision to use Vagrant was taken, because it allows for relatively easy "In
 
 ### Virtualbox
 
-Vagrant is running on virtualbox per default. The current [Vagrantfile](./Vagrantfile) can be configured to use `virtualbox` as a provisioner. You can set this in the environment file `envrc.dist`. For more settings see vagrants [documentation](https://developer.hashicorp.com/vagrant/docs/vagrantfile).
+Vagrant is running on Virtualbox per default. The current [Vagrantfile](./Vagrantfile) can be configured to use `virtualbox` as a provisioner. You can set this in the environment file `envrc.dist`. For more settings see vagrants [documentation](https://developer.hashicorp.com/vagrant/docs/vagrantfile).
 
 ### Libvirt Plugin
 
-That being said, it should be noted that the usage of the libvirt-provider plugin might lead to complications. In order to install the right version of the libvirt-plugin refer to the [documentation here](https://vagrant-libvirt.github.io/vagrant-libvirt/). If the solution in the documentation do not work, you might consider using a lower version of vagrant (e.g. as of 21-11-2024 version 2.4.1 is working well on my fedora host).
+The usage of the `libvirt-provider` plugin is supported and used per default. Its installation might lead to complications though: In order to install the right version of the libvirt-plugin refer to the [documentation here](https://vagrant-libvirt.github.io/vagrant-libvirt/). If the solution in the documentation do not work, you might consider using a lower version of vagrant (e.g. as of 21-11-2024 version 2.4.1 is working well on my fedora host).
 
 ### Ansible Plugin
 
-For provisioning the vagrant-ansible plugin is used.
+For provisioning the `vagrant-ansible` plugin is used.
 
 ## Setup
 
